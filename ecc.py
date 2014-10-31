@@ -3,7 +3,7 @@ import math
 def STR(a):
     # Yes, this is a little bit silly :-)
     for i in range(0, len(a) - 1, 2):
-            print(chr(int(a[i:i+2]))),
+            print((chr(int(a[i:i+2]))), end=' ')
 
 def egcd(a, b):
     if a == 0:
@@ -58,7 +58,7 @@ class Coord(object):
     def __pow__(self, k):
         return Coord(pow(self.x, k, self.n), self.n)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         if isinstance(other, Coord):
             other = other.x
 
@@ -99,9 +99,15 @@ class Point(object):
         return "(%s, %s)" % (self.x, self.y)
 
 class PointEq(Point):
-    def __init__(self, x, y, n, eq):
+    def __init__(self, x, y, eq):
+        super().__init__(x, y, eq.n)
+        self.eq = eq
 
+    def __mul__(self, k):
+        return self.eq.mul(self, k)
 
+    def __rmul__(self, other):
+        return self*other
 
 class Equation(object):
     def __init__(self, params, field):
@@ -116,7 +122,7 @@ class Equation(object):
         if (y**2 != x**3 + self.a*x + self.b):
             raise Exception('Point is not on curve (%s, %s)' % (y**2, x**3 + x*self.a + self.b))
 
-        return Point(x, y, self.n)
+        return PointEq(x, y, self)
 
     def add(self, p, q):
         if (p.x == None) and (p.y == None):
@@ -132,14 +138,14 @@ class Equation(object):
         rx = (s*s - p.x - q.x)
         ry = (s*(p.x - rx) - p.y)
 
-        return Point(rx, ry, self.n)
+        return PointEq(rx, ry, eq)
 
     def double(self, p):
         s = (3*p.x*p.x + self.a)/(2*p.y)
         rx = (s*s - 2*p.x)
         ry = (s*(p.x - rx) - p.y)
 
-        return Point(rx, ry, self.n)
+        return PointEq(rx, ry, self)
     
     def mul(self, p, k):
         N = p
@@ -153,24 +159,24 @@ class Equation(object):
         return R
 
     def mod(self, n):
-        return Point(self.x % n, self.y % n)
+        return PointEq(self.x % n, self.y % n, self)
 
 if __name__ == "__main__":
     e = 141597355687225811174313
     d = 87441340171043308346177
     n = 928669833265826932708591
     C = (236857987845294655469221, 12418605208975891779391)
-    #c = Point(C[0], C[1])
+
     eq = Equation([0, pow(C[1],2,n) - pow(C[0],3, n)], n)
     c = eq[C[0], C[1]]
 
     #print eq.double(c) # (196269932798073152664662 : 66403428568175199097197 : 1)
     #print eq.mul(c, 3) # (154214382988446711829623 : 588038293798980333372500 : 1)
 
-    M = eq.mul(c, d)
-    C2 = eq.mul(M, e)
+    M = c * d
+    C2 = M * e
 
-    print C2, M
-    print M.x
-    print M.y
-    print STR(M.x) + STR(M.y)
+    print(C2, M)
+    print(M.x)
+    print(M.y)
+    STR(str(M.x)), STR(str(M.y))
